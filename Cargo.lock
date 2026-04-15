@@ -5,6 +5,7 @@ version = 4
 [[package]]
 name = "binlayout"
 version = "0.1.0"
+source = "git+https://github.com/H-Cebrecos/binlayout#50de2980a86331654e9fc837971333f4ecf7f4d3"
 dependencies = [
  "binlayout-derive",
 ]
@@ -12,6 +13,7 @@ dependencies = [
 [[package]]
 name = "binlayout-derive"
 version = "0.1.0"
+source = "git+https://github.com/H-Cebrecos/binlayout-derive#7858cfa9eedca4255b3e577ce69fcf250f108980"
 dependencies = [
  "proc-macro2",
  "quote",
