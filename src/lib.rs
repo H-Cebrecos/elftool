@@ -21,11 +21,9 @@
  */
 
 #![no_std]
+pub mod elf;    // Core API
 
 mod repr;   // private repr(C) types
-
-
-pub mod elf;    // Core API
 
 #[cfg(feature = "reader")]
 pub mod reader;

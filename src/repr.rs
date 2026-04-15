@@ -25,7 +25,9 @@ use binlayout::BinLayout;
 pub const ELF_MAGIC: [u8; 4] = [0x7f, b'E', b'L', b'F'];
 
 #[repr(C)]
+#[derive(BinLayout)]
 pub struct ElfInfo {
+    pub magic: [u8; 4],
     pub ei_class: u8,
     pub ei_data: u8,
     pub ei_version: u8,

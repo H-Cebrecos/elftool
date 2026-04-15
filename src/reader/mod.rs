@@ -67,21 +67,14 @@ impl<R: ElfReader> ReaderCtx<R> {
         let mut reader = reader;
 
         /* Parse identification header */
-        const INFO_SIZE: usize = size_of::<ElfInfo>() + 4;
+        const INFO_SIZE: usize = size_of::<ElfInfo>();
         let mut buf = [0u8; INFO_SIZE];
         reader.read(0, &mut buf)?;
 
-        if buf[0..4] != ELF_MAGIC {
+        let info = ElfInfo::parse_ne(&buf);
+        if info.magic != ELF_MAGIC {
             return Err(ElfErr::BadMagic);
         }
-
-        //TODO: we don't need this unsafe at all and should be replaced with a parse_ne once binlayout supports slices.
-        let info: &ElfInfo = unsafe {
-            // Safety:
-            //  - `buf[4..]` contains at least `size_of<ElfInfo>()` bytes
-            //  - `ElfInfo` has aligment 1
-            &*(buf[4..].as_ptr() as *const ElfInfo)
-        };
 
         if info.ei_abi_version != EV::CURRENT as u8 {
             return Err(ElfErr::BadVersion);
@@ -109,7 +102,7 @@ impl<R: ElfReader> ReaderCtx<R> {
                     return Err(ElfErr::BadSize);
                 }
 
-                (&hdr, info).into()
+                (&hdr, &info).into()
             }
             ELFCLASS::CLASS_64 => {
                 class = Class::Bit64;
@@ -124,7 +117,7 @@ impl<R: ElfReader> ReaderCtx<R> {
                     return Err(ElfErr::BadSize);
                 }
 
-                (&hdr, info).into()
+                (&hdr, &info).into()
             }
             _ => return Err(ElfErr::BadClass),
         };
