@@ -20,18 +20,18 @@
  * SOFTWARE.
  */
 
-#![no_std]
+use core::mem::size_of;
+
+use binlayout::BinLayout;
+use binlayout::Endian;
 
 use crate::elf::header::*;
 use crate::elf::*;
 use crate::repr::*;
 
-enum Endianess {
-    Lit,
-    Big,
-}
-
+#[derive(Default)]
 enum Class {
+    #[default]
     Bit64,
     Bit32,
 }
@@ -39,7 +39,8 @@ enum Class {
 pub struct ReaderCtx<R> {
     reader: R,
     class: Class,
-    endianess: Endianess,
+    endianess: Endian,
+    hdr: ElfHeader,
 }
 
 //TODO: Doc that it actually reads the file
@@ -63,55 +64,84 @@ impl<R: ElfReader> ReaderCtx<R> {
          * This function doesn't check for:
          *      - null section is not of SHT_NULL type if there is no need to access the section (lazy check)
          */
-
-        let mut ctx = Self {
-            reader: reader,
-            class: Class::Bit64,
-            endianess: Endianess::Lit,
-        };
+        let mut reader = reader;
 
         /* Parse identification header */
-        let mut buf = [0u8; core::mem::size_of::<ElfHeaderRaw>()];
-        ctx.reader.read(0, &mut buf)?;
+        const INFO_SIZE: usize = size_of::<ElfInfo>() + 4;
+        let mut buf = [0u8; INFO_SIZE];
+        reader.read(0, &mut buf)?;
 
         if buf[0..4] != ELF_MAGIC {
             return Err(ElfErr::BadMagic);
         }
 
+        //TODO: we don't need this unsafe at all and should be replaced with a parse_ne once binlayout supports slices.
         let info: &ElfInfo = unsafe {
-            // Safety: ElfInfo is #[repr(C)] and matches the ELF layout exactly
+            // Safety:
+            //  - `buf[4..]` contains at least `size_of<ElfInfo>()` bytes
+            //  - `ElfInfo` has aligment 1
             &*(buf[4..].as_ptr() as *const ElfInfo)
         };
 
         if info.ei_abi_version != EV::CURRENT as u8 {
             return Err(ElfErr::BadVersion);
         }
-        // TODO: continue here with the class, note that it is cached in the ctx
-        // TODO: convert this and the other into an enum to store
-        ctx.class = match info.ei_class {
+
+        //TODO: a "native" cfg that only allows native size/endianness and errors otherwise
+        let endianess = match info.ei_data {
+            ELFDATA::LSB => Endian::Little,
+            ELFDATA::MSB => Endian::Big,
+            _ => return Err(ElfErr::BadEndianness),
+        };
+
+        let class;
+        let hdr: ElfHeader = match info.ei_class {
             ELFCLASS::CLASS_32 => {
-                //todo!("get buffer for 32 bit");
-                Class::Bit32
+                class = Class::Bit32;
+                let mut hdr_buf = [0u8; size_of::<Elf32Hdr>()];
+                reader.read(INFO_SIZE, &mut hdr_buf)?;
+                let hdr = Elf32Hdr::parse(&hdr_buf, endianess);
+
+                if hdr.e_ehsize as usize != size_of::<Elf32Hdr>()
+                    || (hdr.e_phnum > 0 && hdr.e_phentsize as usize != size_of::<Elf32ProHdr>())
+                    || (hdr.e_shnum > 0 && hdr.e_shentsize as usize != size_of::<Elf32SecHdr>())
+                {
+                    return Err(ElfErr::BadSize);
+                }
+
+                (&hdr, info).into()
             }
             ELFCLASS::CLASS_64 => {
-                //todo!("get buffer to 64 bit");
-                Class::Bit64
+                class = Class::Bit64;
+                let mut hdr_buf = [0u8; size_of::<Elf64Hdr>()];
+                reader.read(INFO_SIZE, &mut hdr_buf)?;
+                let hdr = Elf64Hdr::parse(&hdr_buf, endianess);
+
+                if hdr.e_ehsize as usize != size_of::<Elf64Hdr>()
+                    || (hdr.e_phnum > 0 && hdr.e_phentsize as usize != size_of::<Elf64ProHdr>())
+                    || (hdr.e_shnum > 0 && hdr.e_shentsize as usize != size_of::<Elf64SecHdr>())
+                {
+                    return Err(ElfErr::BadSize);
+                }
+
+                (&hdr, info).into()
             }
             _ => return Err(ElfErr::BadClass),
         };
 
-        ctx.endianess = match info.ei_data {
-            ELFDATA::LSB => Endianess::Lit, //TODO: endianess is still a WIP
-            ELFDATA::MSB => Endianess::Big,
-            _ => return Err(ElfErr::BadEndianness),
-        };
+        if (hdr.ph_entry_num > 0 && hdr.pro_hdr_off == 0)
+        || (hdr.sh_entry_num > 0 && hdr.sec_hdr_off == 0) {
+            return Err(ElfErr::BadHeader)
+        }
 
-        //TODO: start testing with some files
+        /* Detect special indexes */
+        //TODO: 
 
-        //TODO: make non-native endiannes support optional, and try to make it into the type system
-        //      that if you try to compile code that doesn't check that the endianness is supported
-        //      you get an error.
-        Ok(ctx)
+        Ok(Self { reader, class, endianess, hdr })
+    }
+
+    pub fn get_hdr(&self) -> &ElfHeader {
+        &self.hdr
     }
 
     // the other functions go here

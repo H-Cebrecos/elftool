@@ -20,6 +20,8 @@
  * SOFTWARE.
  */
 
+use binlayout::BinLayout;
+
 pub const ELF_MAGIC: [u8; 4] = [0x7f, b'E', b'L', b'F'];
 
 #[repr(C)]
@@ -32,25 +34,58 @@ pub struct ElfInfo {
     pub pad: [u8; 7],
 }
 
+const _: () = {
+    assert!(core::mem::align_of::<ElfInfo>() == 1);
+};
+
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
-pub struct ElfHeaderRaw {
-    pub ei_class: u8,
-    pub ei_data: u8,
-    pub ei_os_abi: u8,
-    pub ei_abi_ver: u8,
-    pub padding: [u8; 7],
-    pub elf_type: u16,
-    pub machine: u16,
-    pub version: u32,
-    pub entry: u64,
-    pub pro_hdr_off: u64,
-    pub sec_hdr_off: u64,
-    pub flags: u32,
-    pub hdr_size: u16,
-    pub ph_entry_sz: u16,
-    pub ph_entry_num: u16,
-    pub sh_entry_sz: u16,
-    pub sh_entry_num: u16,
-    pub sec_str_idx: u16,
+#[derive(BinLayout)]
+pub struct Elf32Hdr {
+    pub e_type: u16,    // Type of ELF file
+    pub e_machine: u16, // Architecture
+    pub e_version: u32, // Always 1
+    pub e_entry: u32,   // Entry point (virtual address)
+    pub e_phoff: u32,   // Offset of program header table in the file (bytes)
+    pub e_shoff: u32,   // Offset of section header table in the file (bytes)
+    pub e_flags: u32,
+    pub e_ehsize: u16,    // This header's size
+    pub e_phentsize: u16, // Size of one entry in the program header table
+    pub e_phnum: u16,     // Number of entries in the program header table
+    pub e_shentsize: u16, // Size of one entry in the section header table
+    pub e_shnum: u16,     // Number of entries in the section header table
+    pub e_shstrndx: u16, // Index of the entry in the section table that points to the section names
 }
+
+#[repr(C)]
+#[derive(BinLayout)]
+pub struct Elf64Hdr {
+    pub e_type: u16,    // Type of ELF file
+    pub e_machine: u16, // Architecture
+    pub e_version: u32, // Always 1
+    pub e_entry: u64,   // Entry point (virtual address)
+    pub e_phoff: u64,   // Offset of program header table in the file (bytes)
+    pub e_shoff: u64,   // Offset of section header table in the file (bytes)
+    pub e_flags: u32,
+    pub e_ehsize: u16,    // This header's size
+    pub e_phentsize: u16, // Size of one entry in the program header table
+    pub e_phnum: u16,     // Number of entries in the program header table
+    pub e_shentsize: u16, // Size of one entry in the section header table
+    pub e_shnum: u16,     // Number of entries in the section header table
+    pub e_shstrndx: u16, // Index of the entry in the section table that points to the section names
+}
+
+
+#[repr(C)]
+#[derive(BinLayout)]
+pub struct Elf32ProHdr {}
+
+#[repr(C)]
+#[derive(BinLayout)]
+pub struct Elf64ProHdr {}
+
+#[repr(C)]
+#[derive(BinLayout)]
+pub struct Elf32SecHdr {}
+#[repr(C)]
+#[derive(BinLayout)]
+pub struct Elf64SecHdr {}

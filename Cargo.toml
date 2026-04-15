@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-
+binlayout = { path = "f:/lab/crates/binlayout/binlayout" }
 
 [features]
 default = ["reader"]
