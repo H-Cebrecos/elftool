@@ -7,7 +7,17 @@ edition = "2024"
 binlayout = { git = "https://github.com/H-Cebrecos/binlayout"}
 
 [features]
-default = ["reader"]
+default = ["reader", "fmt"]
 reader  = []
 writer  = []
 riscv   = []
+fmt     = []
+
+[lints.rust]
+ambiguous_negative_literals = "warn"
+missing_debug_implementations = "warn"
+redundant_imports = "warn"
+redundant_lifetimes = "warn"
+trivial_numeric_casts = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unused_lifetimes = "warn"

@@ -44,6 +44,18 @@ pub mod header {
         /* You may add your application's processor-specific types here */
 
         pub const HIPROC: ElfType = 0xffff; //   end of Processor-specific range
+
+                #[cfg(feature = "fmt")]
+        pub fn to_str(v: ElfType) -> &'static str {
+            match v {
+                NONE => "No Type",
+                REL => "REL (Relocatable file)",
+                EXEC => "EXEC (Executable file",
+                DYN => "DYN (Shared object file",
+                CORE => "CORE (Core file)",
+                _ => "Unknown",
+            }
+        }
     }
 
     /// Represents the ELF version of a file.
@@ -60,6 +72,14 @@ pub mod header {
 
         pub const NONE: ElfVersion = 0; // Invalid
         pub const CURRENT: ElfVersion = 1;
+         #[cfg(feature = "fmt")]
+        pub fn to_str(v: ElfVersion) -> &'static str {
+            match v {
+                NONE => "None",
+                CURRENT => "(current)",
+                _ => "Unknown",
+            }
+        }
     }
 
     pub type ElfMachine = u16;
@@ -82,6 +102,16 @@ pub mod header {
         pub const NONE: EiClass = 0;
         pub const CLASS_32: EiClass = 1;
         pub const CLASS_64: EiClass = 2;
+
+        #[cfg(feature = "fmt")]
+        pub fn to_str(v: EiClass) -> &'static str {
+            match v {
+                CLASS_32 => "ELF32",
+                CLASS_64 => "ELF64",
+                NONE => "Invalid",
+                _ => "Unknown",
+            }
+        }
     }
 
     pub type EiData = u8;
@@ -91,6 +121,16 @@ pub mod header {
         pub const NONE: EiData = 0;
         pub const LSB: EiData = 1;
         pub const MSB: EiData = 2;
+
+        #[cfg(feature = "fmt")]
+        pub fn to_str(v: EiData) -> &'static str {
+            match v {
+                LSB => "2's complement, little endian",
+                MSB => "2's comeplement big endian",
+                NONE => "Invalid",
+                _ => "Unknown",
+            }
+        }
     }
 
     pub type ElfABI = u8;
@@ -100,11 +140,20 @@ pub mod header {
         pub const NONE: ElfABI = 0; // This is the default value for most linkers
 
         /* You may add your application-specific ABIs here */
+        
+        #[cfg(feature = "fmt")]
+        pub fn to_str(v: ElfABI) -> &'static str {
+            match v {
+                NONE => "Default",
+                _ => "Unknown",
+            }
+        }
     }
 
     /// Abstract representation of the ELF header, it does not represent the real layout, instead provides a uniform view into the data.
     /// Abstract representation of the ELF header.
     /// Does not represent the real layout, instead provides a uniform view into the data.
+    #[derive(Debug)]
     pub struct ElfHeader {
         /// 32 or 64 bit architecture
         pub ei_class: EiClass,
@@ -163,7 +212,7 @@ pub mod header {
 
     impl From<(&crate::repr::Elf32Hdr, &crate::repr::ElfInfo)> for ElfHeader {
         fn from(value: (&crate::repr::Elf32Hdr, &crate::repr::ElfInfo)) -> Self {
-          let (hdr, info) = value;
+            let (hdr, info) = value;
             Self {
                 ei_class: info.ei_class,
                 ei_data: info.ei_data,
@@ -188,7 +237,7 @@ pub mod header {
     }
     impl From<(&crate::repr::Elf64Hdr, &crate::repr::ElfInfo)> for ElfHeader {
         fn from(value: (&crate::repr::Elf64Hdr, &crate::repr::ElfInfo)) -> Self {
-              let (hdr, info) = value;
+            let (hdr, info) = value;
             Self {
                 ei_class: info.ei_class,
                 ei_data: info.ei_data,
@@ -433,7 +482,7 @@ pub mod segment {
 pub enum ElfErr {
     Uninit,
     BadMagic,
-    BadVersion,
+    BadVersion(u8),
     BadClass,
     BadEndianness,
     BadSize,
@@ -449,5 +498,5 @@ pub enum ElfErr {
     NoMem,
 }
 pub trait ElfReader {
-    fn read(&mut self, offset: usize, buf: &mut [u8]) -> Result<(), ElfErr>;
+    fn read(&mut self, offset: u64, buf: &mut [u8]) -> Result<(), ElfErr>;
 }
