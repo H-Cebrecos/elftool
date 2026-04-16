@@ -33,13 +33,35 @@ impl ElfReader for FileReader {
     }
 }
 
+use clap::Parser;
+use std::path::PathBuf;
+
+#[derive(Parser)]
+#[command(name = "readelf")]
+#[command(about = "Simple ELF inspection tool")]
+struct Args {
+    /// Show ELF header
+    #[arg(short = 'H', long = "header")]
+    header: bool,
+
+    /// Input ELF file
+    file: PathBuf,
+}
+
 fn main() -> Result<(), ElfErr> {
-    let path = env::args().nth(1).expect("usage: readelf_rs <file>");
+    let args = Args::parse();
 
-    let reader = FileReader::open(&path)?;
+    let reader = FileReader::open(args.file.to_str().unwrap())?;
     let ctx = ReaderCtx::new(reader)?;
-    let hdr = ctx.get_hdr();
 
+    if args.header {
+        print_hdr(ctx.get_hdr());
+    }
+
+    Ok(())
+}
+
+fn print_hdr(hdr: &ElfHeader) {
     println!("ELF Header:");
     println!(
         "  Class:                             {}",
@@ -54,7 +76,10 @@ fn main() -> Result<(), ElfErr> {
         hdr.version,
         EV::to_str(hdr.version)
     );
-    println!("  OS/ABI:                            {}", ELFOSABI::to_str(hdr.ei_os_abi));
+    println!(
+        "  OS/ABI:                            {}",
+        ELFOSABI::to_str(hdr.ei_os_abi)
+    );
     println!("  ABI Version:                       {}", hdr.ei_abi_ver);
     println!(
         "  Type:                              {}",
@@ -87,6 +112,4 @@ fn main() -> Result<(), ElfErr> {
     );
     println!("  Number of section headers:         {}", hdr.sh_entry_num);
     println!("  Section header string table index: {}", hdr.sec_str_idx);
-
-    Ok(())
 }

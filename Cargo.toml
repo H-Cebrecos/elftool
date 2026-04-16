@@ -13,9 +13,11 @@ writer  = []
 riscv   = []
 fmt     = []
 
+[dev-dependencies]
+clap = { version = "4", features = ["derive"] }
+
 [lints.rust]
 ambiguous_negative_literals = "warn"
-missing_debug_implementations = "warn"
 redundant_imports = "warn"
 redundant_lifetimes = "warn"
 trivial_numeric_casts = "warn"
