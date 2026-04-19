@@ -1,5 +1,4 @@
 use std::{
-    env,
     fs::File,
     io::{Read, Seek, SeekFrom},
 };
@@ -65,25 +64,25 @@ fn print_hdr(hdr: &ElfHeader) {
     println!("ELF Header:");
     println!(
         "  Class:                             {}",
-        ELFCLASS::to_str(hdr.ei_class)
+        hdr.ei_class
     );
     println!(
         "  Data:                              {}",
-        ELFDATA::to_str(hdr.ei_data)
+        hdr.ei_data
     );
     println!(
         "  Version:                           {} {}",
         hdr.version,
-        EV::to_str(hdr.version)
+        hdr.version
     );
     println!(
         "  OS/ABI:                            {}",
-        ELFOSABI::to_str(hdr.ei_os_abi)
+        hdr.ei_os_abi
     );
     println!("  ABI Version:                       {}", hdr.ei_abi_ver);
     println!(
         "  Type:                              {}",
-        ET::to_str(hdr.elf_type)
+        hdr.elf_type
     );
     println!("  Machine:                           {:?}", hdr.machine); //TODO
     println!("  Version:                           0x{:x}", hdr.version);

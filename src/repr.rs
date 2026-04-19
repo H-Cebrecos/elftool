@@ -40,6 +40,25 @@ const _: () = {
     assert!(core::mem::align_of::<ElfInfo>() == 1);
 };
 
+pub mod ET {
+
+    pub const NONE: u16 = 0; // No type
+    pub const REL: u16 = 1; // relocatable
+    pub const EXEC: u16 = 2; // executable
+    pub const DYN: u16 = 3; // shared object
+    pub const CORE: u16 = 4; // Core file
+    pub const LOOS: u16 = 0xfe00; // start of OS-specific range
+
+    /* You may add your application's OS-specific types here */
+
+    pub const HIOS: u16 = 0xfeff; //   end of OS-specific range
+    pub const LOPROC: u16 = 0xff00; // start of Processor-specific range
+
+    /* You may add your application's processor-specific types here */
+
+    pub const HIPROC: u16 = 0xffff; //   end of Processor-specific range
+}
+
 pub type SecIdxType = u16;
 pub mod sec_idx {
     use super::SecIdxType;

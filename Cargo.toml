@@ -7,11 +7,11 @@ edition = "2024"
 binlayout = { git = "https://github.com/H-Cebrecos/binlayout"}
 
 [features]
-default = ["reader", "fmt"]
+default = ["reader"]
 reader  = []
 writer  = []
 riscv   = []
-fmt     = []
+
 
 [dev-dependencies]
 clap = { version = "4", features = ["derive"] }

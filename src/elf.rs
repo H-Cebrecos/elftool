@@ -22,38 +22,49 @@
 
 //! TODO: docs and revise a lot, with the standard
 
-#![allow(non_snake_case)]
-
 pub mod header {
-    pub type ElfType = u16;
-    pub mod ET {
-        use super::ElfType;
+    use core::fmt::Display;
 
-        pub const NONE: ElfType = 0; // No type
-        pub const REL: ElfType = 1; // relocatable
-        pub const EXEC: ElfType = 2; // executable
-        pub const DYN: ElfType = 3; // shared object
-        pub const CORE: ElfType = 4; // Core file
-        pub const LOOS: ElfType = 0xfe00; // start of OS-specific range
+    #[derive(Debug, PartialEq)]
+    pub enum ElfType {
+        None,
+        Reloc,
+        Exec,
+        Dyn,
+        Core,
+        Reserved(u16),
+        Os(u16),
+        Proc(u16),
+    }
 
-        /* You may add your application's OS-specific types here */
+    impl Display for ElfType {
+        /// Uses readelf-like identification
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            match self {
+                ElfType::None => write!(f, "No Type"),
+                ElfType::Reloc => write!(f, "REL (Relocatable file)"),
+                ElfType::Exec => write!(f, "EXEC (Executable file)"),
+                ElfType::Dyn => write!(f, "DYN (Shared object file)"),
+                ElfType::Core => write!(f, "CORE (Core file)"),
+                ElfType::Os(x) => write!(f, "OS specific value ({})", x),
+                ElfType::Proc(x) => write!(f, "Processor specific value ({})", x),
+                ElfType::Reserved(x) => write!(f, "Reserved. This value was reserved by the spec for future use({})", x),
+            }
+        }
+    }
 
-        pub const HIOS: ElfType = 0xfeff; //   end of OS-specific range
-        pub const LOPROC: ElfType = 0xff00; // start of Processor-specific range
-
-        /* You may add your application's processor-specific types here */
-
-        pub const HIPROC: ElfType = 0xffff; //   end of Processor-specific range
-
-                #[cfg(feature = "fmt")]
-        pub fn to_str(v: ElfType) -> &'static str {
-            match v {
-                NONE => "No Type",
-                REL => "REL (Relocatable file)",
-                EXEC => "EXEC (Executable file",
-                DYN => "DYN (Shared object file",
-                CORE => "CORE (Core file)",
-                _ => "Unknown",
+    impl From<u16> for ElfType {
+        fn from(value: u16) -> Self {
+            use crate::repr::ET;
+            match value {
+                ET::NONE =>  Self::None,
+                ET::REL =>  Self::Reloc,
+                ET::EXEC =>  Self::Exec,
+                ET::DYN =>  Self::Dyn,
+                ET::CORE =>  Self::Core,
+                ET::LOOS ..=ET::HIOS => Self::Os(value),
+                ET::LOPROC ..=ET::HIPROC => Self::Proc(value),
+                _ => Self::Reserved(value),
             }
         }
     }
@@ -219,7 +230,7 @@ pub mod header {
                 ei_os_abi: info.ei_os_abi,
                 ei_abi_ver: info.ei_abi_version as u32,
                 padding: info.pad,
-                elf_type: hdr.e_type,
+                elf_type: hdr.e_type.into(),
                 machine: hdr.e_machine,
                 version: hdr.e_version,
                 entry: hdr.e_entry as u64,
@@ -244,7 +255,7 @@ pub mod header {
                 ei_os_abi: info.ei_os_abi,
                 ei_abi_ver: info.ei_abi_version as u32,
                 padding: info.pad,
-                elf_type: hdr.e_type,
+                elf_type: hdr.e_type.into(),
                 machine: hdr.e_machine,
                 version: hdr.e_version,
                 entry: hdr.e_entry,
