@@ -20,14 +20,12 @@
  * SOFTWARE.
  */
 
-use core::mem::size_of;
-
 use binlayout::BinLayout;
 use binlayout::Endian;
 
-use crate::elf::header::*;
-use crate::elf::section::ElfSecHeader;
-use crate::elf::*;
+use crate::_og_elf_not_real::header::*;
+use crate::_og_elf_not_real::section::ElfSecHeader;
+use crate::_og_elf_not_real::*;
 use crate::repr::*;
 
 #[derive(Debug, Default)]
@@ -116,7 +114,10 @@ impl<R: ElfReader> ReaderCtx<R> {
                     || (hdr.e_phnum > 0 && hdr.e_phentsize as usize != size_of::<Elf64ProHdr>())
                     || (hdr.e_shnum > 0 && hdr.e_shentsize as usize != size_of::<Elf64SecHdr>())
                 {
-                    assert!(hdr.e_ehsize as usize == (size_of::<Elf64Hdr>() + INFO_SIZE), "bad size");
+                    assert!(
+                        hdr.e_ehsize as usize == (size_of::<Elf64Hdr>() + INFO_SIZE),
+                        "bad size"
+                    );
                     return Err(ElfErr::BadSize);
                 }
 
@@ -126,13 +127,13 @@ impl<R: ElfReader> ReaderCtx<R> {
         };
 
         if (hdr.ph_entry_num > 0 && hdr.pro_hdr_off == 0)
-        || (hdr.sh_entry_num > 0 && hdr.sec_hdr_off == 0) {
-            return Err(ElfErr::BadHeader)
+            || (hdr.sh_entry_num > 0 && hdr.sec_hdr_off == 0)
+        {
+            return Err(ElfErr::BadHeader);
         }
 
         /* Detect special indexes */
-        if (hdr.sh_entry_num == sec_idx::SHN_UNDEF)
-        || (hdr.sec_str_idx == sec_idx::SHN_XINDEX) {
+        if (hdr.sh_entry_num == sec_idx::SHN_UNDEF) || (hdr.sec_str_idx == sec_idx::SHN_XINDEX) {
             if hdr.sec_hdr_off == 0 {
                 return Err(ElfErr::BadHeader);
             }
@@ -140,7 +141,12 @@ impl<R: ElfReader> ReaderCtx<R> {
             //TODO: wee need to get the null section but we don't have the context intialized.
         }
 
-        Ok(Self { reader, class, endianess, hdr })
+        Ok(Self {
+            reader,
+            class,
+            endianess,
+            hdr,
+        })
     }
 
     pub fn get_hdr(&self) -> &ElfHeader {
