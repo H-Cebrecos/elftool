@@ -23,9 +23,9 @@
 use binlayout::BinLayout;
 use binlayout::Endian;
 
-use crate::elf::header::*;
-use crate::elf::section::ElfSecHeader;
-use crate::elf::*;
+use crate::_og_elf_not_real::header::*;
+use crate::_og_elf_not_real::section::ElfSecHeader;
+use crate::_og_elf_not_real::*;
 use crate::repr::*;
 
 #[derive(Debug, Default)]
