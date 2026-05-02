@@ -1,32 +1,10 @@
-/*
- * Copyright (c) 2026 Hugo Cebrecos
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 use binlayout::BinLayout;
 use binlayout::Endian;
 
-use crate::_og_elf_not_real::header::*;
-use crate::_og_elf_not_real::section::ElfSecHeader;
-use crate::_og_elf_not_real::*;
-use crate::repr::*;
+use crate::elf::header::*;
+use crate::elf::repr::*;
+use crate::elf::section::ElfSecHeader;
+use crate::elf::*;
 
 #[derive(Debug, Default)]
 enum Class {
@@ -76,20 +54,20 @@ impl<R: ElfReader> ReaderCtx<R> {
             return Err(ElfErr::BadMagic);
         }
 
-        if info.ei_version != EV::CURRENT as u8 {
+        if info.ei_version != elf_version::CURRENT as u8 {
             return Err(ElfErr::BadVersion(info.ei_version));
         }
 
         //TODO: a "native" cfg that only allows native size/endianness and errors otherwise
         let endianess = match info.ei_data {
-            ELFDATA::LSB => Endian::Little,
-            ELFDATA::MSB => Endian::Big,
+            elf_data::LSB => Endian::Little,
+            elf_data::MSB => Endian::Big,
             _ => return Err(ElfErr::BadEndianness),
         };
 
         let class;
         let hdr: ElfHeader = match info.ei_class {
-            ELFCLASS::CLASS_32 => {
+            elf_class::CLASS_32 => {
                 class = Class::Bit32;
                 let mut hdr_buf = [0u8; size_of::<Elf32Hdr>()];
                 reader.read(INFO_SIZE as u64, &mut hdr_buf)?;
@@ -104,7 +82,7 @@ impl<R: ElfReader> ReaderCtx<R> {
 
                 (&hdr, &info).into()
             }
-            ELFCLASS::CLASS_64 => {
+            elf_class::CLASS_64 => {
                 class = Class::Bit64;
                 let mut hdr_buf = [0u8; size_of::<Elf64Hdr>()];
                 reader.read(INFO_SIZE as u64, &mut hdr_buf)?;

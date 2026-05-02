@@ -62,30 +62,17 @@ fn main() -> Result<(), ElfErr> {
 
 fn print_hdr(hdr: &ElfHeader) {
     println!("ELF Header:");
-    println!(
-        "  Class:                             {}",
-        hdr.ei_class
-    );
-    println!(
-        "  Data:                              {}",
-        hdr.ei_data
-    );
+    println!("  Class:                             {}", hdr.ei_class);
+    println!("  Data:                              {}", hdr.ei_data);
     println!(
         "  Version:                           {} {}",
-        hdr.version,
-        hdr.version
+        hdr.version, hdr.version
     );
-    println!(
-        "  OS/ABI:                            {}",
-        hdr.ei_os_abi
-    );
+    println!("  OS/ABI:                            {}", hdr.ei_os_abi);
     println!("  ABI Version:                       {}", hdr.ei_abi_ver);
-    println!(
-        "  Type:                              {}",
-        hdr.elf_type
-    );
-    println!("  Machine:                           {:?}", hdr.machine); //TODO
-    println!("  Version:                           0x{:x}", hdr.version);
+    println!("  Type:                              {}", hdr.elf_type);
+    println!("  Machine:                           {:?}", hdr.machine);
+    println!("  Version:                           0x{:?}", hdr.version);
     println!("  Entry point address:               0x{:x}", hdr.entry);
     println!(
         "  Start of program headers:          {} (bytes into file)",
