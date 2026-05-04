@@ -1,6 +1,7 @@
-pub mod repr;
-
 pub mod header;
+pub mod section;
+pub mod segment;
+pub mod symbol;
 
 #[derive(Debug)]
 pub enum ElfErr {

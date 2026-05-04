@@ -2,8 +2,8 @@ use binlayout::BinLayout;
 use binlayout::Endian;
 
 use crate::elf::header::*;
-use crate::elf::repr::*;
-use crate::elf::section::ElfSecHeader;
+use crate::elf::section::*;
+use crate::elf::segment::*;
 use crate::elf::*;
 
 #[derive(Debug, Default)]
@@ -54,20 +54,19 @@ impl<R: ElfReader> ReaderCtx<R> {
             return Err(ElfErr::BadMagic);
         }
 
-        if info.ei_version != elf_version::CURRENT as u8 {
+        if info.ei_version != Version::CURRENT as u8 {
             return Err(ElfErr::BadVersion(info.ei_version));
         }
 
-        //TODO: a "native" cfg that only allows native size/endianness and errors otherwise
         let endianess = match info.ei_data {
-            elf_data::LSB => Endian::Little,
-            elf_data::MSB => Endian::Big,
+            InfoData::LSB => Endian::Little,
+            InfoData::MSB => Endian::Big,
             _ => return Err(ElfErr::BadEndianness),
         };
 
         let class;
         let hdr: ElfHeader = match info.ei_class {
-            elf_class::CLASS_32 => {
+            InfoClass::CLASS_32 => {
                 class = Class::Bit32;
                 let mut hdr_buf = [0u8; size_of::<Elf32Hdr>()];
                 reader.read(INFO_SIZE as u64, &mut hdr_buf)?;
@@ -82,7 +81,7 @@ impl<R: ElfReader> ReaderCtx<R> {
 
                 (&hdr, &info).into()
             }
-            elf_class::CLASS_64 => {
+            InfoClass::CLASS_64 => {
                 class = Class::Bit64;
                 let mut hdr_buf = [0u8; size_of::<Elf64Hdr>()];
                 reader.read(INFO_SIZE as u64, &mut hdr_buf)?;
@@ -92,10 +91,6 @@ impl<R: ElfReader> ReaderCtx<R> {
                     || (hdr.e_phnum > 0 && hdr.e_phentsize as usize != size_of::<Elf64ProHdr>())
                     || (hdr.e_shnum > 0 && hdr.e_shentsize as usize != size_of::<Elf64SecHdr>())
                 {
-                    assert!(
-                        hdr.e_ehsize as usize == (size_of::<Elf64Hdr>() + INFO_SIZE),
-                        "bad size"
-                    );
                     return Err(ElfErr::BadSize);
                 }
 
@@ -129,6 +124,38 @@ impl<R: ElfReader> ReaderCtx<R> {
 
     pub fn get_hdr(&self) -> &ElfHeader {
         &self.hdr
+    }
+
+    pub fn get_program_hdr(&mut self, idx: u16) -> Result<ProgramHeader, ElfErr> {
+        if idx >= self.hdr.ph_entry_num {
+            return Err(ElfErr::BadIndex);
+        }
+
+        let segment: ProgramHeader;
+        match self.class {
+            Class::Bit32 => {
+                let mut seg_buf = [0u8; size_of::<Elf32ProHdr>()];
+                self.reader.read(
+                    self.hdr.pro_hdr_off + (idx * (self.hdr.ph_entry_sz)) as u64,
+                    &mut seg_buf,
+                )?;
+                let seg = Elf32ProHdr::parse(&seg_buf, self.endianess);
+                segment = (&seg).into();
+            }
+            Class::Bit64 => {
+                let mut seg_buf = [0u8; size_of::<Elf64ProHdr>()];
+                self.reader.read(
+                    self.hdr.pro_hdr_off + (idx * (self.hdr.ph_entry_sz)) as u64,
+                    &mut seg_buf,
+                )?;
+                let seg = Elf64ProHdr::parse(&seg_buf, self.endianess);
+                segment = (&seg).into();
+            }
+        }
+
+        //TODO: checks
+        //TODO: note segments
+        return Ok(segment);
     }
 
     pub fn get_sec_hdr(&self) -> &ElfSecHeader {

@@ -1,6 +1,23 @@
-use super::repr::*;
-
 use core::fmt::Display;
+use binlayout::BinLayout;
+
+pub const ELF_MAGIC: [u8; 4] = [0x7f, b'E', b'L', b'F'];
+
+#[repr(C)]
+#[derive(Debug, BinLayout)]
+pub struct ElfInfo {
+    pub magic: [u8; 4],
+    pub ei_class: u8,
+    pub ei_data: u8,
+    pub ei_version: u8,
+    pub ei_os_abi: u8,
+    pub ei_abi_version: u8,
+    pub pad: [u8; 7],
+}
+
+const _: () = {
+    assert!(core::mem::align_of::<ElfInfo>() == 1);
+};
 
 #[derive(Debug, PartialEq)]
 pub enum InfoClass {
@@ -9,12 +26,17 @@ pub enum InfoClass {
     Class64,
     Reserved(u8),
 }
+impl InfoClass {
+    pub const NONE: u8 = 0;
+    pub const CLASS_32: u8 = 1;
+    pub const CLASS_64: u8 = 2;
+}
 impl From<u8> for InfoClass {
     fn from(value: u8) -> Self {
         match value {
-            elf_class::NONE => Self::None,
-            elf_class::CLASS_32 => Self::Class32,
-            elf_class::CLASS_64 => Self::Class64,
+            InfoClass::NONE => Self::None,
+            InfoClass::CLASS_32 => Self::Class32,
+            InfoClass::CLASS_64 => Self::Class64,
             _ => Self::Reserved(value),
         }
     }
@@ -37,12 +59,17 @@ pub enum InfoData {
     Big,
     Reserved(u8),
 }
+impl InfoData {
+    pub const NONE: u8 = 0;
+    pub const LSB: u8 = 1;
+    pub const MSB: u8 = 2;
+}
 impl From<u8> for InfoData {
     fn from(value: u8) -> Self {
         match value {
-            elf_data::NONE => Self::None,
-            elf_data::LSB => Self::Little,
-            elf_data::MSB => Self::Big,
+            InfoData::NONE => Self::None,
+            InfoData::LSB => Self::Little,
+            InfoData::MSB => Self::Big,
             _ => Self::Reserved(value),
         }
     }
@@ -64,11 +91,15 @@ pub enum Version {
     Current,
     Reserved(u32),
 }
+impl Version {
+    pub const NONE: u32 = 0; // Invalid
+    pub const CURRENT: u32 = 1;
+}
 impl From<u32> for Version {
     fn from(value: u32) -> Self {
         match value {
-            elf_version::NONE => Self::None,
-            elf_version::CURRENT => Self::Current,
+            Version::NONE => Self::None,
+            Version::CURRENT => Self::Current,
             _ => Self::Reserved(value),
         }
     }
@@ -76,8 +107,8 @@ impl From<u32> for Version {
 impl From<u8> for Version {
     fn from(value: u8) -> Self {
         match u32::from(value) {
-            elf_version::NONE => Self::None,
-            elf_version::CURRENT => Self::Current,
+            Version::NONE => Self::None,
+            Version::CURRENT => Self::Current,
             _ => Self::Reserved(u32::from(value)),
         }
     }
@@ -101,10 +132,14 @@ pub enum OsABI {
     None,
     Other(u8),
 }
+impl OsABI {
+    pub const NONE: u8 = 0; // This is the default value for most linkers
+    /* You may add your application-specific ABIs here */
+}
 impl From<u8> for OsABI {
     fn from(value: u8) -> Self {
         match value {
-            elf_os_abi::NONE => Self::None,
+            OsABI::NONE => Self::None,
             _ => Self::Other(value),
         }
     }
@@ -118,6 +153,7 @@ impl Display for OsABI {
     }
 }
 
+
 #[derive(Debug, PartialEq)]
 pub enum Type {
     None,
@@ -129,16 +165,33 @@ pub enum Type {
     Os(u16),
     Proc(u16),
 }
+impl Type {
+    pub const NONE: u16 = 0; // No type
+    pub const REL: u16 = 1; // relocatable
+    pub const EXEC: u16 = 2; // executable
+    pub const DYN: u16 = 3; // shared object
+    pub const CORE: u16 = 4; // Core file
+    pub const LOOS: u16 = 0xfe00; // start of OS-specific range
+
+    /* You may add your application's OS-specific types here */
+
+    pub const HIOS: u16 = 0xfeff; //   end of OS-specific range
+    pub const LOPROC: u16 = 0xff00; // start of Processor-specific range
+
+    /* You may add your application's processor-specific types here */
+
+    pub const HIPROC: u16 = 0xffff; //   end of Processor-specific range
+}
 impl From<u16> for Type {
     fn from(value: u16) -> Self {
         match value {
-            elf_type::NONE => Self::None,
-            elf_type::REL => Self::Reloc,
-            elf_type::EXEC => Self::Exec,
-            elf_type::DYN => Self::Dyn,
-            elf_type::CORE => Self::Core,
-            elf_type::LOOS..=elf_type::HIOS => Self::Os(value),
-            elf_type::LOPROC..=elf_type::HIPROC => Self::Proc(value),
+            Type::NONE => Self::None,
+            Type::REL => Self::Reloc,
+            Type::EXEC => Self::Exec,
+            Type::DYN => Self::Dyn,
+            Type::CORE => Self::Core,
+            Type::LOOS..=Type::HIOS => Self::Os(value),
+            Type::LOPROC..=Type::HIPROC => Self::Proc(value),
             _ => Self::Reserved(value),
         }
     }
@@ -168,10 +221,14 @@ pub enum Machine {
     None,
     Other(u16),
 }
+impl Machine {
+    pub const NONE: u16 = 0;
+    /* You may add your application-specific machines here */
+}
 impl From<u16> for Machine {
     fn from(value: u16) -> Self {
         match value {
-            elf_machine::NONE => Self::None,
+            Machine::NONE => Self::None,
             _ => Self::Other(value),
         }
     }
@@ -183,6 +240,42 @@ impl Display for Machine {
             Self::Other(x) => write!(f, "Unknown {x}"),
         }
     }
+}
+
+#[repr(C)]
+#[derive(Debug, BinLayout)]
+pub struct Elf32Hdr {
+    pub e_type: u16,    // Type of ELF file
+    pub e_machine: u16, // Architecture
+    pub e_version: u32, // Always 1
+    pub e_entry: u32,   // Entry point (virtual address)
+    pub e_phoff: u32,   // Offset of program header table in the file (bytes)
+    pub e_shoff: u32,   // Offset of section header table in the file (bytes)
+    pub e_flags: u32,
+    pub e_ehsize: u16,    // This header's size
+    pub e_phentsize: u16, // Size of one entry in the program header table
+    pub e_phnum: u16,     // Number of entries in the program header table
+    pub e_shentsize: u16, // Size of one entry in the section header table
+    pub e_shnum: u16,     // Number of entries in the section header table
+    pub e_shstrndx: u16, // Index of the entry in the section table that points to the section names
+}
+
+#[repr(C)]
+#[derive(Debug, BinLayout)]
+pub struct Elf64Hdr {
+    pub e_type: u16,    // Type of ELF file
+    pub e_machine: u16, // Architecture
+    pub e_version: u32, // Always 1
+    pub e_entry: u64,   // Entry point (virtual address)
+    pub e_phoff: u64,   // Offset of program header table in the file (bytes)
+    pub e_shoff: u64,   // Offset of section header table in the file (bytes)
+    pub e_flags: u32,
+    pub e_ehsize: u16,    // This header's size
+    pub e_phentsize: u16, // Size of one entry in the program header table
+    pub e_phnum: u16,     // Number of entries in the program header table
+    pub e_shentsize: u16, // Size of one entry in the section header table
+    pub e_shnum: u16,     // Number of entries in the section header table
+    pub e_shstrndx: u16, // Index of the entry in the section table that points to the section names
 }
 
 /// Abstract representation of the ELF header, it does not represent the real layout, instead provides a uniform view into the data.
