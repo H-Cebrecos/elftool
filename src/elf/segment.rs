@@ -173,7 +173,7 @@ pub struct ProgramHeader {
     pub flags: SegmentFlags,
     pub offset: u64, // Segment is stored at <offset> from the beginning of this file
     pub phy_addr: u64, // Physical address, only relevant on some systems
-    pub vir_addr: u64, // Virtual address of this segment in memory
+    pub virt_addr: u64, // Virtual address of this segment in memory
     pub file_size: u64, // Size of the segment in this file
     pub mem_size: u64, // Size of the segment in the memory image
     pub alignment: u64, // Alignment constraints of address fields
@@ -185,7 +185,7 @@ impl From<&Elf32ProHdr> for ProgramHeader {
             seg_type: hdr.p_type.into(),
             flags: hdr.p_flags.into(),
             offset: hdr.p_offset as u64,
-            vir_addr: hdr.p_vaddr as u64,
+            virt_addr: hdr.p_vaddr as u64,
             phy_addr: hdr.p_paddr as u64,
             file_size: hdr.p_filesz as u64,
             mem_size: hdr.p_memsz as u64,
@@ -200,7 +200,7 @@ impl From<&Elf64ProHdr> for ProgramHeader {
             seg_type: hdr.p_type.into(),
             flags: hdr.p_flags.into(),
             offset: hdr.p_offset,
-            vir_addr: hdr.p_vaddr,
+            virt_addr: hdr.p_vaddr,
             phy_addr: hdr.p_paddr,
             file_size: hdr.p_filesz,
             mem_size: hdr.p_memsz,

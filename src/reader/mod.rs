@@ -122,6 +122,10 @@ impl<R: ElfReader> ReaderCtx<R> {
         })
     }
 
+    pub fn read_at(&mut self, offset: u64, buf: &mut [u8]) -> Result<(), ElfErr> {
+        self.reader.read(offset, buf)
+    }
+
     pub fn get_hdr(&self) -> &ElfHeader {
         &self.hdr
     }
