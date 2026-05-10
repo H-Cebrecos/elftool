@@ -8,8 +8,10 @@ binlayout = { git = "https://github.com/H-Cebrecos/binlayout"}
 
 [features]
 default = ["reader"]
+std = []
 reader  = []
-writer  = []
+native_only = []
+writer  = ["std"]
 riscv   = []
 
 

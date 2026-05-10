@@ -21,13 +21,15 @@
  */
 
 #![no_std]
+
+#[cfg(feature = "std")]
+extern crate std;
+
 pub mod elf; // Core API
 
 #[cfg(feature = "reader")]
 pub mod reader;
 
-#[cfg(feature = "writer")]
-extern crate std; // enable full std library for writer
 #[cfg(feature = "writer")]
 pub mod writer;
 

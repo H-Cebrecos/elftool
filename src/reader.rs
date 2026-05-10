@@ -9,7 +9,9 @@ use crate::elf::*;
 #[derive(Debug, Default)]
 enum Class {
     #[default]
+    #[cfg(any(not(feature = "native_only"), target_pointer_width = "64"))]
     Bit64,
+    #[cfg(any(not(feature = "native_only"), target_pointer_width = "32"))]
     Bit32,
 }
 
@@ -59,13 +61,16 @@ impl<R: ElfReader> ReaderCtx<R> {
         }
 
         let endianess = match info.ei_data {
+            #[cfg(any(not(feature = "native_only"), target_endian = "little"))]
             InfoData::LSB => Endian::Little,
+            #[cfg(any(not(feature = "native_only"), target_endian = "big"))]
             InfoData::MSB => Endian::Big,
             _ => return Err(ElfErr::BadEndianness),
         };
 
         let class;
         let hdr: ElfHeader = match info.ei_class {
+            #[cfg(any(not(feature = "native_only"), target_pointer_width = "32"))]
             InfoClass::CLASS_32 => {
                 class = Class::Bit32;
                 let mut hdr_buf = [0u8; size_of::<Elf32Hdr>()];
@@ -81,6 +86,7 @@ impl<R: ElfReader> ReaderCtx<R> {
 
                 (&hdr, &info).into()
             }
+            #[cfg(any(not(feature = "native_only"), target_pointer_width = "64"))]
             InfoClass::CLASS_64 => {
                 class = Class::Bit64;
                 let mut hdr_buf = [0u8; size_of::<Elf64Hdr>()];
@@ -137,6 +143,7 @@ impl<R: ElfReader> ReaderCtx<R> {
 
         let segment: ProgramHeader;
         match self.class {
+            #[cfg(any(not(feature = "native_only"), target_pointer_width = "32"))]
             Class::Bit32 => {
                 let mut seg_buf = [0u8; size_of::<Elf32ProHdr>()];
                 self.reader.read(
@@ -146,6 +153,7 @@ impl<R: ElfReader> ReaderCtx<R> {
                 let seg = Elf32ProHdr::parse(&seg_buf, self.endianess);
                 segment = (&seg).into();
             }
+            #[cfg(any(not(feature = "native_only"), target_pointer_width = "64"))]
             Class::Bit64 => {
                 let mut seg_buf = [0u8; size_of::<Elf64ProHdr>()];
                 self.reader.read(

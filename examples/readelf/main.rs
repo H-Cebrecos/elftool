@@ -13,6 +13,7 @@ pub struct FileReader {
     file: File,
 }
 
+//TODO: memory map the file, also provide the file reader as part of the crate
 impl FileReader {
     pub fn open(path: &str) -> Result<Self, ElfErr> {
         let file = File::open(path).map_err(|_| ElfErr::IoError)?;
@@ -122,7 +123,7 @@ fn print_segments<R: ElfReader>(ctx: &mut ReaderCtx<R>) {
             " {:<14} {:010x} {:010x} {:010x} {:08x} {:07x} {:<3} {:06x}",
             ty,
             ph.offset,
-            ph.vir_addr,
+            ph.virt_addr,
             ph.phy_addr,
             ph.file_size,
             ph.mem_size,
